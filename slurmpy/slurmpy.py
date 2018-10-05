@@ -49,17 +49,27 @@ def tmp(suffix=".sh"):
     atexit.register(os.unlink, t)
     return t
 
-
+# read https://www.rc.fas.harvard.edu/resources/running-jobs/ for each parameters
 class Slurm(object):
     def __init__(self, name, slurm_kwargs=None, tmpl=None, date_in_name=True, scripts_dir="slurm-scripts/"):
         if slurm_kwargs is None:
             slurm_kwargs = {}
         if tmpl is None:
             tmpl = TMPL
-
         header = []
+        # set up some default
         if 'time' not in slurm_kwargs.keys():
-            slurm_kwargs['time'] = '84:00:00'
+            slurm_kwargs['time'] = '00:02:00'
+        if 'n' not in slurm_kwargs.keys():
+            slurm_kwargs['n'] = "1"
+        if 'N' not in slurm_kwargs.keys():
+            slurm_kwargs['N'] = '1'
+        if 'p' not in slurm_kwargs.keys():
+            slurm_kwargs['p'] = 'general'
+        if 'mem' not in slurm_kwargs.keys():
+            # in MB, each core is 4G mem
+            slurm_kwargs['mem'] = '4000'
+            
         for k, v in slurm_kwargs.items():
             if len(k) > 1:
                 k = "--" + k + "="
@@ -75,11 +85,10 @@ class Slurm(object):
         else:
             self.scripts_dir = None
         self.date_in_name = bool(date_in_name)
-
-
+        
     def __str__(self):
         return self.tmpl.format(name=self.name, header=self.header)
-
+        
     def _tmpfile(self):
         if self.scripts_dir is None:
             return tmp()
@@ -87,13 +96,13 @@ class Slurm(object):
             if not os.path.exists(self.scripts_dir):
                 os.makedirs(self.scripts_dir)
             return "%s/%s.sh" % (self.scripts_dir, self.name)
-
-    def run(self, command, name_addition=None, cmd_kwargs=None, _cmd="sbatch", tries=1, depends_on=None):
+            
+    def run(self, command, name_addition=None, cmd_kwargs=None, _cmd="bash", tries=1, depends_on=None):
         """
         command: a bash command that you want to run
         name_addition: if not specified, the sha1 of the command to run
-                       appended to job name. if it is "date", the yyyy-mm-dd
-                       date will be added to the job name.
+                       appended to job name, the yyyy-mm-dd 
+                       date will be added to the job name if self.date_in_name is TRUE (default)
         cmd_kwargs: dict of extra arguments to fill in command
                    (so command itself can be a template).
         _cmd: submit command (change to "bash" for testing).
@@ -101,34 +110,35 @@ class Slurm(object):
                success.
         depends_on: job ids that this depends on before it is run (users 'afterok')
         """
-        if name_addition is None:
+        if name_addition is None and not self.date_in_name:
             name_addition = hashlib.sha1(command.encode("utf-8")).hexdigest()
-
+            
         if self.date_in_name:
-            name_addition += "-" + str(datetime.date.today())
-        name_addition = name_addition.strip(" -")
-
+            ## put the date first for easy sorting
+            name_addition = str(datetime.date.today()) + "-"     
+      
         if cmd_kwargs is None:
             cmd_kwargs = {}
-
+            
         n = self.name
         self.name = self.name.strip(" -")
-        self.name += ("-" + name_addition.strip(" -"))
+        # put the date before the jobname
+        self.name = name_addition.strip(" -") + "-" + self.name
         args = []
         for k, v in cmd_kwargs.items():
             args.append("export %s=%s" % (k, v))
         args = "\n".join(args)
-
+        
         tmpl = str(self).replace("__script__", args + "\n###\n" + command)
         if depends_on is None or (len(depends_on) == 1 and depends_on[0] is None):
             depends_on = []
-
+            
         if "logs/" in tmpl and not os.path.exists("logs/"):
             os.makedirs("logs")
-
+            
         with open(self._tmpfile(), "w") as sh:
             sh.write(tmpl)
-
+            
         job_id = None
         for itry in range(1, tries + 1):
             args = [_cmd]
@@ -146,7 +156,7 @@ class Slurm(object):
             if itry == 1:
                 job_id = j_id
         return job_id
-
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
