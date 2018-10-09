@@ -1,11 +1,13 @@
 
 ### Submitting jobs to slurm via python2/python3.
 
-This repo was forked from [Brent Pederson](https://github.com/brentp/slurmpy).
-I made some small changes by setting up the default time, queue for the Harvard Odyssey HPC cluster.
-I also changed how the script is named. I prefix the names with the dates so it can be sorted easily by linux command.
+I usually use `Snakemake` to manage my workflow on HPC. snakemake can internally submit jobs to any scheduler, but sometimes, I do need to run some commands quickly and I do not want to copy paste the `#SBATCH header each time`.
+I googled around and found the repo from [Brent Pederson](https://github.com/brentp/slurmpy). Thanks for making this!
+
+I forked the repo and  I made some small changes by setting up the default time, queue for the Harvard Odyssey HPC cluster. I also changed how the script is named. I prefix the names with the dates so it can be sorted easily by linux command.
 
 Please check the research computing page for specifications of parameters for Odyssey at [here](https://www.rc.fas.harvard.edu/resources/running-jobs/).
+
 
 #### default parameters
 
@@ -122,5 +124,19 @@ to indicate that this job should not run until the the job with `job_id` has fin
 
 git clone https://github.com/crazyhottommy/slurmpy
 
+cd slurmpy
+
 python setup.py install --user
+
 ```
+
+### How to use
+
+```bash
+mkdir slurmpy_odyssey
+cd slurmpy_odyssey
+python
+from slurmpy import Slurm
+...
+```
+This way, the `logs` and `slurm_scripts` folder will be generated inside the slurmpy_odyssey folder.
