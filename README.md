@@ -1,10 +1,10 @@
 
 ### Submitting jobs to slurm via python2/python3.
 
-I usually use `Snakemake` to manage my workflow on HPC. snakemake can internally submit jobs to any scheduler, but sometimes, I do need to run some commands quickly and I do not want to copy paste the `#SBATCH header each time`.
+I usually use `Snakemake` to manage my workflow on HPC. snakemake can internally submit jobs to any scheduler, but sometimes, I do need to run some commands quickly and I do not want to copy paste the `#SBATCH` header each time.
 I googled around and found the repo from [Brent Pederson](https://github.com/brentp/slurmpy). Thanks for making this!
 
-I forked the repo and  I made some small changes by setting up the default time, queue for the Harvard Odyssey HPC cluster. I also changed how the script is named. I prefix the names with the dates so it can be sorted easily by linux command.
+I forked the repo and made some small changes by setting up the default time, queue for the Harvard Odyssey HPC cluster. I also changed how the script is named. I prefix the names with the dates so it can be sorted easily by linux command.
 
 Please check the research computing page for specifications of parameters for Odyssey at [here](https://www.rc.fas.harvard.edu/resources/running-jobs/).
 
@@ -94,8 +94,8 @@ stuff
 
 ```
 
-The above will submit the job to `sbatch` automatically write the script to `scripts/`
-and automatically write logs/{name}.err and logs/{name}.out. It will have today's
+The above will submit the job to `sbatch` automatically write the script to `slurm_scripts/`
+and automatically write `logs/{name}.err` and `logs/{name}.out`. It will have today's
 date in the log and script names.
 
 The script to run() can also contain `$variables` which are filled with the `cmd_kwarg` dict.
@@ -138,5 +138,19 @@ cd slurmpy_odyssey
 python
 from slurmpy import Slurm
 ...
+exit()
+
+# the scripts will be writen in the slurm_scripts folder and the logs in the logs folder.
+find . 
+./slurm-scripts
+./slurm-scripts/2018-10-09-test-tommyfirstjob.sh
+./slurm-scripts/2018-10-09-tommysecondjob.sh
+./listfiles2.txt
+./mylistfiles.txt
+./logs
+./logs/2018-10-09-tommysecondjob.55721494.err
+./logs/2018-10-09-tommysecondjob.55721494.out
+./logs/2018-10-09-test-tommyfirstjob.55718062.err
+./logs/2018-10-09-test-tommyfirstjob.55718062.out
 ```
 This way, the `logs` and `slurm_scripts` folder will be generated inside the slurmpy_odyssey folder.
