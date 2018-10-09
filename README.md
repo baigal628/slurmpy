@@ -39,16 +39,16 @@ __script__
 
 ```python
 s = Slurm("job-name", {"time": "04:00:00", "partition": "shared"})
-print(str(s))
 
 print(str(s))
 #!/bin/bash
 
-#SBATCH -e logs/jobname.%J.err
-#SBATCH -o logs/jobname.%J.out
-#SBATCH -J jobname
+#SBATCH -e logs/job-name.%J.err
+#SBATCH -o logs/job-name.%J.out
+#SBATCH -J job-name
 
-#SBATCH --time=00:02:00
+#SBATCH --time=04:00:00
+#SBATCH --partition=shared
 #SBATCH -n 1
 #SBATCH -N 1
 #SBATCH -p general
@@ -57,7 +57,6 @@ print(str(s))
 set -eo pipefail -o nounset
 
 __script__
-
 ```
 
 This little utility can handle single letter parameter or full name. e.g. you can specify `p` or `partition`, but note that the default is `-p`, and if you specify `partition`, the `-p` is not overwritten (can be improved to check that). to overwrite the default, use `Slurm("job-name", {"time": "04:00:00", "p": "shared"})`. The same for `time` and `mem`. e.g. If you want to overwrite `mem`, do not use `m`. 
