@@ -110,12 +110,16 @@ class Slurm(object):
                success.
         depends_on: job ids that this depends on before it is run (users 'afterok')
         """
-        if name_addition is None and not self.date_in_name:
-            name_addition = hashlib.sha1(command.encode("utf-8")).hexdigest()
-            
+        
+        ## put the date first for easy sorting    
         if self.date_in_name:
-            ## put the date first for easy sorting
-            name_addition = str(datetime.date.today()) + "-" + name_addition    
+            if name_addition is None:
+                name_addition = str(datetime.date.today()) + "-" 
+            else:
+                name_addition = str(datetime.date.today()) + "-" + name_addition
+        else:
+            if name_addition is None:
+                name_addition = hashlib.sha1(command.encode("utf-8")).hexdigest()
       
         if cmd_kwargs is None:
             cmd_kwargs = {}
