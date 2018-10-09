@@ -97,7 +97,7 @@ class Slurm(object):
                 os.makedirs(self.scripts_dir)
             return "%s/%s.sh" % (self.scripts_dir, self.name)
             
-    def run(self, command, name_addition=None, cmd_kwargs=None, _cmd="bash", tries=1, depends_on=None):
+    def run(self, command, name_addition=None, cmd_kwargs=None, _cmd="sbatch", tries=1, depends_on=None):
         """
         command: a bash command that you want to run
         name_addition: if not specified, the sha1 of the command to run
@@ -115,7 +115,7 @@ class Slurm(object):
             
         if self.date_in_name:
             ## put the date first for easy sorting
-            name_addition = str(datetime.date.today()) + "-"     
+            name_addition = str(datetime.date.today()) + "-" + name_addition    
       
         if cmd_kwargs is None:
             cmd_kwargs = {}
