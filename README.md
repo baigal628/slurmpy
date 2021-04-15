@@ -15,30 +15,7 @@ Please check the research computing page for specifications of parameters for Od
 from slurmpy import Slurm
 
 # default parameter
-s = Slurm("jobname")
-
-print(str(s))
-#!/bin/bash
-
-#SBATCH -e logs/jobname.%J.err
-#SBATCH -o logs/jobname.%J.out
-#SBATCH -J jobname
-
-#SBATCH --time=00:02:00
-#SBATCH -n 1
-#SBATCH -N 1
-#SBATCH -p general
-#SBATCH --mem=4000
-
-set -eo pipefail -o nounset
-
-__script__
-```
-
-#### change time and queue
-
-```python
-s = Slurm("job-name", {"time": "04:00:00", "partition": "shared"})
+s = Slurm("job-name")
 
 print(str(s))
 #!/bin/bash
@@ -47,30 +24,48 @@ print(str(s))
 #SBATCH -o logs/job-name.%J.out
 #SBATCH -J job-name
 
-#SBATCH --time=04:00:00
-#SBATCH --partition=shared
-#SBATCH -n 1
-#SBATCH -N 1
-#SBATCH -p general
-#SBATCH --mem=4000
+#SBATCH -c 10
+#SBATCH --mem=8000
 
 set -eo pipefail -o nounset
 
+module load R
+module load perl
+
 __script__
+
 ```
 
-This little utility can handle single letter parameter or full name. e.g. you can specify `p` or `partition`, but note that the default is `-p`, and if you specify `partition`, the `-p` is not overwritten (can be improved to check that). to overwrite the default, use `Slurm("job-name", {"time": "04:00:00", "p": "shared"})`. The same for `time` and `mem`. e.g. If you want to overwrite `mem`, do not use `m`. 
+#### change CPU and memory
 
+```python
+
+s = Slurm("job-name", {"c": "8", "mem": "16G"})
+
+print(str(s))
+#!/bin/bash
+
+#SBATCH -e logs/job-name.%J.err
+#SBATCH -o logs/job-name.%J.out
+#SBATCH -J job-name
+
+#SBATCH -c 8
+#SBATCH --mem=16G
+
+set -eo pipefail -o nounset
+
+module load R
+module load perl
+
+__script__
+
+```
 
 ### run/submit jobs 
 
 ```python
-s.run("""
-do
-lots
-of
-stuff
-""", name_addition="", tries=1, depends_on=[job_id]))
+cmd = "ls | wc -l > line.txt"
+s.run(cmd, name_addition="", tries=1, depends_on=[job_id]))
 
 ```
 
@@ -113,24 +108,54 @@ python setup.py install --user
 ### How to use
 
 ```bash
-mkdir slurmpy_odyssey
-cd slurmpy_odyssey
+mkdir slurmpy_kraken
+cd slurmpy_kraken
 python
-from slurmpy import Slurm
-...
-exit()
 
-# the scripts will be writen in the slurm_scripts folder and the logs in the logs folder.
-find . 
-./slurm-scripts
-./slurm-scripts/2018-10-09-test-tommyfirstjob.sh
-./slurm-scripts/2018-10-09-tommysecondjob.sh
-./listfiles2.txt
-./mylistfiles.txt
-./logs
-./logs/2018-10-09-tommysecondjob.55721494.err
-./logs/2018-10-09-tommysecondjob.55721494.out
-./logs/2018-10-09-test-tommyfirstjob.55718062.err
-./logs/2018-10-09-test-tommyfirstjob.55718062.out
+```python
+
+from slurmpy import Slurm
+
+s = Slurm("Pool87_59", {"mem": "8G"})
+
+print(str(s))
+
+"""
+#!/bin/bash
+
+#SBATCH -e logs/Pool8759.%J.err
+#SBATCH -o logs/Pool8759.%J.out
+#SBATCH -J Pool8759
+
+#SBATCH --mem=8G
+#SBATCH -c 10
+
+set -eo pipefail -o nounset
+
+module load R
+module load perl
+
+__script__
+"""
+cmd = "scafe.workflow.sc.solo \
+--overwrite=yes \
+--run_bam_path=~/bam_files/$sample/outs/possorted_genome_bam.bam\
+--run_cellbarcode_path=~/bam_files/$sample/outs/filtered_feature_bc_matrix/barcodes.tsv.gz \
+--genome=hg38.gencode_v32 \
+--run_tag $sample \
+--run_outDir=~/output/$sample"
+
+
+s.run(cmd, cmd_kwargs={'sample': 'Pool87_59'})
+
+##Later:
+
+Slurm('Pool84_10' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_10'})
+Slurm('Pool84_11' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_11'})
+Slurm('Pool84_12' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_12'})
+....
+
+exit()
 ```
-This way, the `logs` and `slurm_scripts` folder will be generated inside the slurmpy_odyssey folder.
+
+This way, the `logs` and `slurm_scripts` folder will be generated inside the slurmpy_kraken folder.

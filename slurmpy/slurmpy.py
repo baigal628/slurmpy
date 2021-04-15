@@ -1,6 +1,6 @@
 r"""
 # send in job name and kwargs for slurm params:
->>> s = Slurm("job-name", {"account": "ucgd-kp", "partition": "ucgd-kp"})
+>>> s = Slurm("Pool87_59", {"mem": "8G"})
 >>> print(str(s))
 #!/bin/bash
 <BLANKLINE>
@@ -8,16 +8,27 @@ r"""
 #SBATCH -o logs/job-name.%J.out
 #SBATCH -J job-name
 <BLANKLINE>
-#SBATCH --account=ucgd-kp
-#SBATCH --partition=ucgd-kp
+#SBATCH --mem=8000
+#SBATCH -c 16
 <BLANKLINE>
+
 set -eo pipefail -o nounset
+
+module load R
+module load perl
 <BLANKLINE>
 __script__
 
->>> job_id = s.run("rm -f aaa; sleep 10; echo 213 > aaa", name_addition="", tries=1)
+>>> cmd = "scafe.workflow.sc.solo \
+--overwrite=yes \
+--run_bam_path=/liulab/galib/cHL/SCAFE/SCAFE/analysis/bam_files/$sample/outs/possorted_genome_bam.bam\
+--run_cellbarcode_path=/liulab/galib/cHL/SCAFE/SCAFE/analysis/bam_files/$sample/outs/filtered_feature_bc_matrix/barcodes.tsv.gz \
+--genome=hg38.gencode_v32 \
+--run_tag $sample \
+--run_outDir=/liulab/galib/cHL/SCAFE/SCAFE/analysis/output/$sample"
 
->>> job = s.run("cat aaa; rm aaa", name_addition="", tries=1, depends_on=[job_id])
+
+>>> s.run(cmd, cmd_kwargs={'sample': 'Pool87_59'})
 
 """
 from __future__ import print_function
@@ -41,7 +52,12 @@ TMPL = """\
 
 set -eo pipefail -o nounset
 
-__script__"""
+module load R
+module load perl
+
+__script__
+
+"""
 
 
 def tmp(suffix=".sh"):
@@ -58,18 +74,12 @@ class Slurm(object):
             tmpl = TMPL
         header = []
         # set up some default
-        if 'time' not in slurm_kwargs.keys():
-            slurm_kwargs['time'] = '00:02:00'
-        if 'n' not in slurm_kwargs.keys():
-            slurm_kwargs['n'] = "1"
-        if 'N' not in slurm_kwargs.keys():
-            slurm_kwargs['N'] = '1'
-        if 'p' not in slurm_kwargs.keys():
-            slurm_kwargs['p'] = 'general'
+        if 'c' not in slurm_kwargs.keys():
+            slurm_kwargs['c'] = "10"
         if 'mem' not in slurm_kwargs.keys():
             # in MB, each core is 4G mem
-            slurm_kwargs['mem'] = '4000'
-            
+            slurm_kwargs['mem'] = '8000'
+
         for k, v in slurm_kwargs.items():
             if len(k) > 1:
                 k = "--" + k + "="
@@ -85,10 +95,10 @@ class Slurm(object):
         else:
             self.scripts_dir = None
         self.date_in_name = bool(date_in_name)
-        
+
     def __str__(self):
         return self.tmpl.format(name=self.name, header=self.header)
-        
+
     def _tmpfile(self):
         if self.scripts_dir is None:
             return tmp()
@@ -96,12 +106,12 @@ class Slurm(object):
             if not os.path.exists(self.scripts_dir):
                 os.makedirs(self.scripts_dir)
             return "%s/%s.sh" % (self.scripts_dir, self.name)
-            
+
     def run(self, command, name_addition=None, cmd_kwargs=None, _cmd="sbatch", tries=1, depends_on=None):
         """
         command: a bash command that you want to run
         name_addition: if not specified, the sha1 of the command to run
-                       appended to job name, the yyyy-mm-dd 
+                       appended to job name, the yyyy-mm-dd
                        date will be added to the job name if self.date_in_name is TRUE (default)
         cmd_kwargs: dict of extra arguments to fill in command
                    (so command itself can be a template).
@@ -110,20 +120,20 @@ class Slurm(object):
                success.
         depends_on: job ids that this depends on before it is run (users 'afterok')
         """
-        
-        ## put the date first for easy sorting    
+
+        ## put the date first for easy sorting
         if self.date_in_name:
             if name_addition is None:
-                name_addition = str(datetime.date.today()) + "-" 
+                name_addition = str(datetime.date.today()) + "-"
             else:
                 name_addition = str(datetime.date.today()) + "-" + name_addition
         else:
             if name_addition is None:
                 name_addition = hashlib.sha1(command.encode("utf-8")).hexdigest()
-      
+
         if cmd_kwargs is None:
             cmd_kwargs = {}
-            
+
         n = self.name
         self.name = self.name.strip(" -")
         # put the date before the jobname
@@ -132,17 +142,17 @@ class Slurm(object):
         for k, v in cmd_kwargs.items():
             args.append("export %s=%s" % (k, v))
         args = "\n".join(args)
-        
+
         tmpl = str(self).replace("__script__", args + "\n###\n" + command)
         if depends_on is None or (len(depends_on) == 1 and depends_on[0] is None):
             depends_on = []
-            
+
         if "logs/" in tmpl and not os.path.exists("logs/"):
             os.makedirs("logs")
-            
+
         with open(self._tmpfile(), "w") as sh:
             sh.write(tmpl)
-            
+
         job_id = None
         for itry in range(1, tries + 1):
             args = [_cmd]
@@ -160,7 +170,7 @@ class Slurm(object):
             if itry == 1:
                 job_id = j_id
         return job_id
-        
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
