@@ -111,6 +111,7 @@ python setup.py install --user
 mkdir slurmpy_kraken
 cd slurmpy_kraken
 python
+```
 
 ```python
 
@@ -120,7 +121,7 @@ s = Slurm("Pool87_59", {"mem": "8G"})
 
 print(str(s))
 
-"""
+
 #!/bin/bash
 
 #SBATCH -e logs/Pool8759.%J.err
@@ -136,7 +137,8 @@ module load R
 module load perl
 
 __script__
-"""
+
+
 cmd = "scafe.workflow.sc.solo \
 --overwrite=yes \
 --run_bam_path=~/bam_files/$sample/outs/possorted_genome_bam.bam\
@@ -153,7 +155,7 @@ s.run(cmd, cmd_kwargs={'sample': 'Pool87_59'})
 Slurm('Pool84_10' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_10'})
 Slurm('Pool84_11' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_11'})
 Slurm('Pool84_12' , {'mem': '8G'}).run(cmd, cmd_kwargs={'sample': 'Pool84_12'})
-....
+...
 
 exit()
 ```
